@@ -1,0 +1,3 @@
+# The MVP runs on Python's standard library only.
+# Add a pinned HTTP client here when the Apify API TODO is implemented.
+

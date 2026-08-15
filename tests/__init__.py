@@ -1,0 +1,2 @@
+"""AutoScout tests."""
+

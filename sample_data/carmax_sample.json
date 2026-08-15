@@ -1,0 +1,43 @@
+[
+  {
+    "vin": "1HGBH41JXMN109186",
+    "stockNumber": "CM1001",
+    "year": 2021,
+    "make": "Toyota",
+    "model": "RAV4",
+    "trim": "XLE",
+    "price": "$24,998",
+    "originalPrice": "$26,498",
+    "mileage": "42,150",
+    "storeName": "Sample CarMax Store",
+    "transferFee": 0,
+    "url": "https://example.com/sample-listing-1"
+  },
+  {
+    "vin": "2T3P1RFV0MC123456",
+    "stockNumber": "CM1002",
+    "year": 2020,
+    "make": "Toyota",
+    "model": "RAV4",
+    "trim": "LE",
+    "price": 23998,
+    "mileage": 48100,
+    "storeName": "Sample CarMax Store",
+    "transferFee": 199,
+    "url": "https://example.com/sample-listing-2"
+  },
+  {
+    "vin": "JTMRFREV8JD123456",
+    "stockNumber": "CM1003",
+    "year": 2019,
+    "make": "Toyota",
+    "model": "RAV4",
+    "trim": "Adventure",
+    "price": 22998,
+    "mileage": 55000,
+    "storeName": "Sample CarMax Store",
+    "transferFee": 399,
+    "url": "https://example.com/sample-listing-3"
+  }
+]
+
