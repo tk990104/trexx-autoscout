@@ -5,9 +5,10 @@ import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 from analysis.price_history import new_listings, price_changes
-from collectors.carmax import load_export
+from collectors.carmax import fetch_from_apify, load_export, load_search_config
 from database import connect, save_snapshot
 from reports.notebooklm import build_markdown
 
@@ -36,6 +37,51 @@ class MvpFlowTests(unittest.TestCase):
                 changes = price_changes(connection, second_scan)
                 self.assertEqual(-1000, changes[0]["change_amount"])
                 self.assertIn("Price changes: 1", build_markdown(connection, second_scan))
+
+    def test_live_collector_uses_bearer_header_and_normalizes_items(self) -> None:
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self) -> bytes:
+                return json.dumps([
+                    {
+                        "vin": "VIN00000000000003",
+                        "year": 2022,
+                        "make": "Honda",
+                        "model": "CR-V",
+                        "price": 26998,
+                        "detailUrl": "https://www.carmax.com/car/123",
+                    }
+                ]).encode("utf-8")
+
+        search = {"name": "test", "actor_input": {"zips": ["20001"]}}
+        with patch("collectors.carmax.urlopen", return_value=FakeResponse()) as mocked:
+            listings = fetch_from_apify(
+                search,
+                token="secret-test-token",
+                actor_id="e-commerce/carmax-zipcode-search-scraper",
+                timeout_seconds=60,
+                max_items=10,
+            )
+        request = mocked.call_args.args[0]
+        self.assertEqual("Bearer secret-test-token", request.get_header("Authorization"))
+        self.assertNotIn("secret-test-token", request.full_url)
+        self.assertIn("e-commerce~carmax-zipcode-search-scraper", request.full_url)
+        self.assertEqual("https://www.carmax.com/car/123", listings[0]["url"])
+
+    def test_search_config_refuses_zip_placeholder(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "searches.json"
+            config.write_text(
+                json.dumps({"searches": [{"name": "local", "actor_input": {"zips": ["YOUR_ZIP_CODE"]}}]}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "Replace YOUR_ZIP_CODE"):
+                load_search_config(config)
 
 
 if __name__ == "__main__":

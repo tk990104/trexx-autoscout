@@ -2,15 +2,15 @@
   "searches": [
     {
       "name": "local-carmax-search",
-      "zip_code": "YOUR_ZIP_CODE",
-      "radius_miles": 100,
-      "makes": [],
-      "models": [],
-      "year_min": 2018,
-      "year_max": null,
-      "price_max": 30000,
-      "mileage_max": 80000
+      "actor_input": {
+        "zips": [
+          "YOUR_ZIP_CODE"
+        ],
+        "makes": [],
+        "radius": 50,
+        "maxConcurrency": 3,
+        "maxRequestsPerCrawl": 5
+      }
     }
   ]
 }
-
