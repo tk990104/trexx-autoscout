@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import ssl
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
@@ -103,6 +104,19 @@ class ApifyCollectionError(RuntimeError):
     """Raised when a live Actor run cannot be safely completed."""
 
 
+def verified_ssl_context() -> ssl.SSLContext:
+    """Build a verified TLS context compatible with common Windows CA chains.
+
+    Python 3.13 enables X.509 strict verification by default. Some otherwise
+    trusted Windows certificate chains fail only that extra compatibility check.
+    Certificate validation and hostname verification remain fully enabled.
+    """
+    context = ssl.create_default_context()
+    if hasattr(ssl, "VERIFY_X509_STRICT"):
+        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    return context
+
+
 def load_search_config(path: str | Path, search_name: str | None = None) -> dict[str, Any]:
     """Load one named search while keeping actor input separate from app metadata."""
     with Path(path).open("r", encoding="utf-8-sig") as handle:
@@ -168,7 +182,11 @@ def fetch_from_apify(
         },
     )
     try:
-        with urlopen(request, timeout=timeout_seconds + 30) as response:
+        with urlopen(
+            request,
+            timeout=timeout_seconds + 30,
+            context=verified_ssl_context(),
+        ) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
@@ -193,3 +211,4 @@ def fetch_from_apify(
             "Its output mapping may need an update."
         )
     return valid
+

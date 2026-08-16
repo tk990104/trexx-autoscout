@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 import tempfile
 import unittest
 from contextlib import closing
@@ -8,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from analysis.price_history import new_listings, price_changes
-from collectors.carmax import fetch_from_apify, load_export, load_search_config
+from collectors.carmax import fetch_from_apify, load_export, load_search_config, verified_ssl_context
 from database import connect, save_snapshot
 from reports.notebooklm import build_markdown
 
@@ -68,10 +69,20 @@ class MvpFlowTests(unittest.TestCase):
                 max_items=10,
             )
         request = mocked.call_args.args[0]
+        tls_context = mocked.call_args.kwargs["context"]
         self.assertEqual("Bearer secret-test-token", request.get_header("Authorization"))
         self.assertNotIn("secret-test-token", request.full_url)
         self.assertIn("e-commerce~carmax-zipcode-search-scraper", request.full_url)
+        self.assertEqual(ssl.CERT_REQUIRED, tls_context.verify_mode)
+        self.assertTrue(tls_context.check_hostname)
         self.assertEqual("https://www.carmax.com/car/123", listings[0]["url"])
+
+    def test_ssl_compatibility_context_keeps_verification_enabled(self) -> None:
+        tls_context = verified_ssl_context()
+        self.assertEqual(ssl.CERT_REQUIRED, tls_context.verify_mode)
+        self.assertTrue(tls_context.check_hostname)
+        if hasattr(ssl, "VERIFY_X509_STRICT"):
+            self.assertFalse(tls_context.verify_flags & ssl.VERIFY_X509_STRICT)
 
     def test_search_config_refuses_zip_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -86,3 +97,4 @@ class MvpFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
